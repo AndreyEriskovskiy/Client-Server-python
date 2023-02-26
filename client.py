@@ -9,16 +9,20 @@ class Client(Thread):
         if not os.path.exists(filename):
             print('Заданного вами пути к файлу не существует')
             return False
-        else:
+        else:       
             fpath = os.path.abspath(filename)
             if filename[filename.rfind('\\')+1:] == '' or filename.rfind('.') == -1:
                 print('Не указано имя файла')
                 return False
+           
             elif fpath != filename:
                 print('Вы ввели неполный путь к файлу')
                 return False
+            
             else:
                 return True
+    
+    
         
             
 host = '127.0.0.1'
@@ -45,12 +49,13 @@ else:
     if version == 1:
         while True:
             choice = input('Введите режим работы: ')
+            client_socket.send(choice.encode('utf-8'))
             if choice == start:
                 file_name = input('Введите полный путь к текстовому файлу, который вы хотите отправить на сервер: ')              
                 obj = Client()
                 if obj.is_valid_filename(file_name):
                     client_socket.send(file_name.encode('utf-8'))
-                    pos = file_name.rfind('\\')     
+                    pos = file_name.rfind('\\')            
                     file_size = os.path.getsize(file_name)
                     send_data = ''
     
@@ -63,8 +68,10 @@ else:
                         print(msg)
                     else:
                         print(f'Файл {file_name[pos+1:]} успешно передан на сервер')
+                   
         
                 else:
+                   
                     continue
 
             elif choice == exit:
@@ -73,7 +80,8 @@ else:
             
 
             else:
-                print('Вы ввели несуществующую команду, попробуйте ещё раз')
+                msg = 'Вы ввели несуществующую команду, попробуйте ещё раз'
+                print(msg)
                 continue
        
         
@@ -83,12 +91,13 @@ else:
     elif version == 2:
         while True:
             choice = input('Введите режим работы: ')
+            client_socket.send(choice.encode('utf-8'))
             if choice == start:
                 file_name = input('Введите полный путь к бинарному файлу, который вы хотите отправить на сервер: ')
                 obj = Client()
                 if obj.is_valid_filename(file_name):
                     client_socket.send(file_name.encode('utf-8'))
-                    pos = file_name.rfind('\\')                  
+                    pos = file_name.rfind('\\')
                     file_size = os.path.getsize(file_name)
                     send_data = ''
     
@@ -101,8 +110,10 @@ else:
                         print(msg)
                     else:
                         print(f'Файл {file_name[pos+1:]} успешно передан на сервер')
-        
+
+
                 else:
+                    
                     continue
 
             elif choice == exit:
@@ -110,7 +121,8 @@ else:
                 break
 
             else:
-                print(f'Вы ввели несуществующую команду, попробуйте ещё раз')
+                msg = 'Вы ввели несуществующую команду, попробуйте ещё раз'
+                print(msg)           
                 continue
 
 client_socket.close()
