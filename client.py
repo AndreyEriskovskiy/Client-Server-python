@@ -11,7 +11,10 @@ class Client(Thread):
             return False
         else:
             fpath = os.path.abspath(filename)
-            if fpath != filename:
+            if filename[filename.rfind('\\')+1:] == '' or filename.rfind('.') == -1:
+                print('Не указано имя файла')
+                return False
+            elif fpath != filename:
                 print('Вы ввели неполный путь к файлу')
                 return False
             else:
@@ -47,8 +50,7 @@ else:
                 obj = Client()
                 if obj.is_valid_filename(file_name):
                     client_socket.send(file_name.encode('utf-8'))
-                    pos = file_name.rfind('\\')
-                    f = open(file_name, 'rb')
+                    pos = file_name.rfind('\\')     
                     file_size = os.path.getsize(file_name)
                     send_data = ''
     
@@ -86,8 +88,7 @@ else:
                 obj = Client()
                 if obj.is_valid_filename(file_name):
                     client_socket.send(file_name.encode('utf-8'))
-                    pos = file_name.rfind('\\')
-                    f = open(file_name, 'rb')
+                    pos = file_name.rfind('\\')                  
                     file_size = os.path.getsize(file_name)
                     send_data = ''
     
