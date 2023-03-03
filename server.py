@@ -185,7 +185,7 @@ while True:
                 if flag.startswith('/'):
 
                     if flag == '/exit': 
-                        print(f'Клиент с IP-адресом: {addr[0]} -- Портом: {addr[1]} отключен')
+                        print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
                         break
 
                     elif flag == '/start':
