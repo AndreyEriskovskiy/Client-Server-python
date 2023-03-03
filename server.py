@@ -134,7 +134,7 @@ while True:
             continue
 
 
-        version = 2
+        version = randint(1, 2)
         client_sock.send(str(version).encode('utf-8'))
 
         if version == 1:
