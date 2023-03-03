@@ -3,7 +3,6 @@ from threading import Thread
 from random import *
 import os.path
 import pickle
-import chardet
 
 
 class Server:
@@ -139,20 +138,21 @@ while True:
 
         if version == 1:
             while True:
-                flag = client_sock.recv(1024).decode()
+                flag = client_sock.recv(1024)
 
-                if flag.startswith('/'):
+                if flag.startswith(b'/'):
+                    
 
-                    if flag == '/exit':
+                    if flag == b'/exit':
                         print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
                         break
 
-                    elif flag == '/start':
-                        ValidFileFlag = client_sock.recv(1024).decode()
+                    elif flag == b'/start':
+                        ValidFileFlag = client_sock.recv(1024)
 
-                        if ValidFileFlag == 'Valid':
+                        if ValidFileFlag == b'Valid':
                             try:
-                                file_name = client_sock.recv(1024).decode()
+                                file_name = client_sock.recv(1024).decode('utf-8')
                             except UnicodeDecodeError:
                                 print(f'Ошибка декодирования (IP-адрес: {addr[0]} -- Порт: {addr[1]})')
                                 break
@@ -161,6 +161,7 @@ while True:
                             new_filename = file_name[pos+1:]
    
                             if obj.is_text_file(file_name):
+
                                 f = open(new_filename, 'w')
                                 f.close()       
 
@@ -180,20 +181,20 @@ while True:
         
         elif version == 2:
             while True:          
-                flag = client_sock.recv(1024).decode()
+                flag = client_sock.recv(1024).decode('cp1251')
 
                 if flag.startswith('/'):
 
                     if flag == '/exit': 
-                        print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
+                        print(f'Клиент с IP-адресом: {addr[0]} -- Портом: {addr[1]} отключен')
                         break
 
                     elif flag == '/start':
-                        ValidFileFlag = client_sock.recv(1024).decode()
+                        ValidFileFlag = client_sock.recv(1024).decode('cp1251')
 
                         if ValidFileFlag == 'Valid':
                             try:
-                                file_name = client_sock.recv(1024).decode()
+                                file_name = client_sock.recv(1024).decode('cp1251')
                             except UnicodeDecodeError:
                                 print(f'Ошибка декодирования, IP-адрес: {addr[0]} -- Порт: {addr[1]}')
                                 break
@@ -210,12 +211,12 @@ while True:
                                     get_data = client_sock.recv(file_size)
                                     f.write(get_data)
 
-                                client_sock.send('True'.encode('utf-8'))
+                                client_sock.send('True'.encode('cp1251'))
                                 print(f'Файл {new_filename} был успешно принят')
                 
                             else:
                                 msg = f'Похоже, вы пытаетесь передать на сервер текстовый файл, что не соотвествует версии программы-сервера (версия: {version}), попробуйте еще раз'
-                                client_sock.send(msg.encode('utf-8'))
+                                client_sock.send(msg.encode('cp1251'))
                    
 client_sock.close()
 server.close()
