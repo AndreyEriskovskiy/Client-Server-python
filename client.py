@@ -157,7 +157,7 @@ else:
         elif version == 2:
             while True:
                 choice = input('Введите режим работы: ')
-                client_socket.send(choice.encode('utf-8'))
+                client_socket.send(choice.encode('cp1251'))
 
                 if choice == exit:
                     print('Программа успешно завершена')
@@ -168,8 +168,8 @@ else:
                     obj = Client()
 
                     if obj.is_valid_filename(file_name):
-                        client_socket.send('Valid'.encode('utf-8'))
-                        client_socket.send(file_name.encode('utf-8'))
+                        client_socket.send('Valid'.encode('cp1251'))
+                        client_socket.send(file_name.encode('cp1251'))
                         pos = file_name.rfind('\\')
                         file_size = os.path.getsize(file_name)
                         
@@ -177,7 +177,7 @@ else:
                             send_data = f.read(file_size)
                             client_socket.send(send_data)
                
-                        msg = client_socket.recv(1024).decode()
+                        msg = client_socket.recv(1024).decode('cp1251')
                         if msg != 'True':
                             print(msg)
                         else:
@@ -185,11 +185,13 @@ else:
 
 
                     else:                   
-                        client_socket.send('Invalid'.encode('utf-8'))
+                        client_socket.send('Invalid'.encode('cp1251'))
                
 
                 else:
                     msg = 'Вы ввели несуществующую команду, попробуйте ещё раз'
                     print(msg)           
                     
+
 client_socket.close()
+
