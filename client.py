@@ -112,7 +112,7 @@ else:
         start = '/start'
         exit = '/exit' 
 
-        if version == 1:
+        if version:
             while True:
                 choice = input('Введите режим работы: ')
                 client_socket.send(choice.encode('utf-8'))
@@ -150,48 +150,6 @@ else:
                 else:
                     msg = 'Вы ввели несуществующую команду, попробуйте ещё раз'
                     print(msg)
-       
-        
-     
-       
-
-        elif version == 2:
-            while True:
-                choice = input('Введите режим работы: ')
-                client_socket.send(choice.encode('utf-8'))
-
-                if choice == exit:
-                    print('Программа успешно завершена')
-                    break
-
-                elif choice == start:
-                    file_name = input('Введите полный путь к бинарному файлу, который вы хотите отправить на сервер: ')
-                    obj = Client()
-
-                    if obj.is_valid_filename(file_name):
-                        client_socket.send('Valid'.encode('utf-8'))
-                        client_socket.send(file_name.encode('utf-8'))
-                        pos = file_name.rfind('\\')
-                        file_size = os.path.getsize(file_name)
-                        
-                        with open(file_name, 'rb') as f:    
-                            send_data = f.read(file_size)
-                            client_socket.send(send_data)
-               
-                        msg = client_socket.recv(1024).decode()
-                        if msg != 'True':
-                            print(msg)
-                        else:
-                            print(f'Файл {file_name[pos+1:]} успешно передан на сервер')
-
-
-                    else:                   
-                        client_socket.send('Invalid'.encode('utf-8'))
-               
-
-                else:
-                    msg = 'Вы ввели несуществующую команду, попробуйте ещё раз'
-                    print(msg)           
-                    
+                      
 
 client_socket.close()
