@@ -139,10 +139,9 @@ else:
                     break
 
                 elif choice == start:
-                    if version == 1:
-                        file_name = input('Введите полный путь к текстовому файлу, который вы хотите отправить на сервер: ')
-                    else:
-                        file_name = input('Введите полный путь к бинарному файлу, который вы хотите отправить на сервер: ')
+
+                    file_name = input('Введите полный путь к текстовому файлу, который вы хотите отправить на сервер: ')
+
 
                     obj = Client()
 
@@ -155,32 +154,39 @@ else:
                         with open(file_name, 'rb') as f:    
                             send_data = f.read(file_size)
                             client_socket.send(send_data)
-
-                        catalog_msg = client_socket.recv(1024).decode()
-
-                        if catalog_msg != 'NoAdmin':
-                            while True:
-                                users = client_socket.recv(1024).decode()
-                                print(f'Возможные каталоги для сохранения: {users}')
-                                user_catalog = input(catalog_msg)
-                                if user_catalog != '':
-                                    client_socket.send(user_catalog.encode('utf-8'))
-                                    existing_catalog_flag = client_socket.recv(1024).decode()
-                                    if existing_catalog_flag == 'NotExist':
-                                        print('Введенного вами каталога не существует, попробуйте еще раз')
-                                        continue
-                                    else:
-                                        break
-                                else:
-                                    print('Вы не ввели имя каталога пользователя')
-
+                        
                         msg = client_socket.recv(1024).decode()
+
                         if msg != 'True':
                             print(msg)
+
                         else:
+                            
+                            catalog_msg = client_socket.recv(1024).decode()
+                          
+                            if catalog_msg != 'NoAdmin':
+                                while True:
+                                    users = client_socket.recv(1024).decode()
+                                    print(f'Возможные каталоги для сохранения: {users}')
+                                    user_catalog = input(catalog_msg)
+
+                                    if user_catalog != '':
+                                        client_socket.send(user_catalog.encode('utf-8'))
+                                        existing_catalog_flag = client_socket.recv(1024).decode()
+
+                                        if existing_catalog_flag == 'NotExist':
+                                            print('Введенного вами каталога не существует, попробуйте еще раз')
+                                            continue
+
+                                        else:
+                                            break
+                                    else:
+                                        print('Вы не ввели имя каталога пользователя')
+
                             print(f'Файл {file_name[pos+1:]} успешно передан на сервер')
-                   
-        
+
+                       
+                         
                     else:
                         client_socket.send('Invalid'.encode('utf-8'))
 
