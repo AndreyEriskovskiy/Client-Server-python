@@ -2,23 +2,13 @@ from socket import *
 from threading import Thread
 from random import *
 import os.path
+import os
 import pickle
 import mimetypes
 
-class Server:
-    def is_text_file(self, filename):
-        mimetype, _ = mimetypes.guess_type(filename)
-
-        if mimetype is not None:
-            if mimetype.startswith('text/'):
-                return True
-            else:
-                return False
-        else:
-            return False
-
+class Server(Thread):
     def __init__(self, filename_auth):
-
+        self.admin_logins = ['root', 'admin']
         self.filename_auth = filename_auth
         file_size = os.path.getsize(self.filename_auth)
 
@@ -29,17 +19,61 @@ class Server:
             with open(self.filename_auth, 'rb') as f:
                 self.user_data = pickle.load(f)
 
+    def is_text_file(self, filename):
+        mimetype, _ = mimetypes.guess_type(filename)
+
+        if mimetype is not None:
+            if mimetype.startswith('text/'):
+                return True
+        return False
+
+    def save_file(self, new_filename, file_data, user_login, client_sock):
+        status = self.user_data[user_login][1]
+        if status == 'admin':
+            client_sock.send('Введите имя каталога пользователя, в который хотите сохранить файл: '.encode('utf-8'))
+            while True:
+                user_catalog = client_sock.recv(1024).decode()
+                os.makedirs(f'users/{user_login}', exist_ok=True)
+                if user_catalog in self.user_data:
+                    client_sock.send('Exist'.encode('utf-8'))
+                    user_path = os.path.join(f'users/{user_catalog}', new_filename)
+
+                    f = open(user_path, 'wb')
+                    f.close()
+
+                    with open(user_path, 'ab') as f:
+                        f.write(file_data)
+                    break
+                else:
+                    client_sock.send('NotExist'.encode('utf-8'))
+        else:
+            client_sock.send('NoAdmin'.encode('utf-8'))
+            os.makedirs(f'users/{user_login}', exist_ok=True)
+            user_path = os.path.join(f'users/{user_login}', new_filename)
+
+            f = open(user_path, 'wb')
+            f.close()
+
+            with open(user_path, 'ab') as f:
+                f.write(file_data)
+
+
+
 
     def Check_Registration(self, login):
-
         if login in self.user_data:
             return True
         return False
        
     def Registration(self, login, password):
+        status = 'user'
 
         if not self.Check_Registration(login):
-            self.user_data[login] = password
+            if login in self.admin_logins:
+                status = 'admin'
+                self.user_data[login] = [password, status]
+            else:
+                self.user_data[login] = [password, status]
 
             with open(self.filename_auth, 'wb') as f:
                 pickle.dump(self.user_data, f)
@@ -52,7 +86,9 @@ class Server:
     def Authorization(self, login, password):
 
         if self.Check_Registration(login):
-            if self.user_data[login] == password:
+            existing_password = self.user_data[login][0]
+
+            if existing_password == password:
                 print(f'Пользователь {login} успешно авторизован')
                 return True
             else:
@@ -62,7 +98,8 @@ class Server:
 
         return False
 
-        
+    def GO(self):
+        pass
 
 
 localhost = '127.0.0.1'
@@ -84,6 +121,7 @@ except error:
 
 print('Ожидание соединения...')
 filename_auth = 'user_data.pickle'
+user_login = ''
 obj = Server(filename_auth)
 while True: 
     
@@ -103,7 +141,12 @@ while True:
                 data = client_sock.recv(1024).decode().split('_')
                 login, password = data[0], data[1]
 
+                if login == '?' and password == '?':
+                    empty = client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
+                    continue
+
                 if obj.Registration(login, password):
+                    user_login = login
                     client_sock.send('Successful'.encode('utf-8'))
                     break
                 else:
@@ -112,11 +155,17 @@ while True:
             elif command == '/auth':
                 counter = 0
                 SuccessFlag = False
+                EmptyFlag = False
                 for i in range(3):
                     data = client_sock.recv(1024).decode().split("_")
                     login, password = data[0], data[1]
+                    if login == '?' and password == '?':
+                        empty = client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
+                        EmptyFlag = True
+                        break
 
                     if obj.Authorization(login, password):
+                        user_login = login
                         client_sock.send('Successful'.encode('utf-8'))
                         SuccessFlag = True
                         break
@@ -124,6 +173,9 @@ while True:
                     else:
                         client_sock.send('Failed'.encode('utf-8'))
                         counter += 1
+
+                if EmptyFlag:
+                    continue
 
                 if SuccessFlag:
                     break
@@ -164,15 +216,9 @@ while True:
                             new_filename = file_name[pos+1:]
    
                             if obj.is_text_file(file_name):
-
-                                f = open(new_filename, 'w')
-                                f.close()       
-
-                                with open(new_filename, 'ab') as f:
-                                    file_size = os.path.getsize(file_name)           
-                                    get_data = client_sock.recv(file_size)
-                                    f.write(get_data)
-
+                                file_size = os.path.getsize(file_name)
+                                file_data = client_sock.recv(file_size)
+                                obj.save_file(new_filename, file_data, user_login, client_sock)
                                 client_sock.send('True'.encode('utf-8'))
                                 print(f'Файл {new_filename} был успешно принят')
                 
@@ -206,14 +252,9 @@ while True:
                             new_filename = file_name[pos+1:]
                         
                             if not obj.is_text_file(file_name):
-                                f = open(new_filename, 'wb')
-                                f.close()
-
-                                with open(new_filename, 'ab') as f:
-                                    file_size = os.path.getsize(file_name)
-                                    get_data = client_sock.recv(file_size)
-                                    f.write(get_data)
-
+                                file_size = os.path.getsize(file_name)
+                                file_data = client_sock.recv(file_size)
+                                obj.save_file(new_filename, file_data, user_login, client_sock)
                                 client_sock.send('True'.encode('utf-8'))
                                 print(f'Файл {new_filename} был успешно принят')
                 
@@ -223,4 +264,4 @@ while True:
                    
 client_sock.close()
 server.close()
-              
+                    
