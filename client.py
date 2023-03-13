@@ -160,12 +160,12 @@ else:
 
                         if catalog_msg != 'NoAdmin':
                             while True:
+                                users = client_socket.recv(1024).decode()
+                                print(f'Возможные каталоги для сохранения: {users}')
                                 user_catalog = input(catalog_msg)
-                                
                                 if user_catalog != '':
                                     client_socket.send(user_catalog.encode('utf-8'))
                                     existing_catalog_flag = client_socket.recv(1024).decode()
-                                    
                                     if existing_catalog_flag == 'NotExist':
                                         print('Введенного вами каталога не существует, попробуйте еще раз')
                                         continue
@@ -175,7 +175,6 @@ else:
                                     print('Вы не ввели имя каталога пользователя')
 
                         msg = client_socket.recv(1024).decode()
-                        
                         if msg != 'True':
                             print(msg)
                         else:
