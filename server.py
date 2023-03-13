@@ -7,6 +7,7 @@ import pickle
 import mimetypes
 
 class Server(Thread):
+
     def __init__(self, filename_auth):
         self.admin_logins = ['root', 'admin']
         self.filename_auth = filename_auth
@@ -32,8 +33,11 @@ class Server(Thread):
         if status == 'admin':
             client_sock.send('Введите имя каталога пользователя, в который хотите сохранить файл: '.encode('utf-8'))
             while True:
-                user_catalog = client_sock.recv(1024).decode()
                 os.makedirs(f'users/{user_login}', exist_ok=True)
+                users = os.listdir('users')
+                client_sock.send(", ".join(users).encode('utf-8'))
+                user_catalog = client_sock.recv(1024).decode()
+
                 if user_catalog in self.user_data:
                     client_sock.send('Exist'.encode('utf-8'))
                     user_path = os.path.join(f'users/{user_catalog}', new_filename)
@@ -264,4 +268,3 @@ while True:
                    
 client_sock.close()
 server.close()
-                    
