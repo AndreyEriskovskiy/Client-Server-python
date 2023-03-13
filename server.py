@@ -26,7 +26,10 @@ class Server(Thread):
         if mimetype is not None:
             if mimetype.startswith('text/'):
                 return True
-        return False
+            else:
+                return False
+        else:
+            return False
 
     def save_file(self, new_filename, file_data, user_login, client_sock):
         status = self.user_data[user_login][1]
@@ -47,7 +50,9 @@ class Server(Thread):
 
                     with open(user_path, 'ab') as f:
                         f.write(file_data)
+
                     break
+
                 else:
                     client_sock.send('NotExist'.encode('utf-8'))
         else:
@@ -192,7 +197,7 @@ while True:
             continue
 
 
-        version = randint(1, 2)
+        version = 2
         client_sock.send(str(version).encode('utf-8'))
 
         if version == 1:
@@ -218,12 +223,12 @@ while True:
 
                             pos = file_name.rfind('\\')
                             new_filename = file_name[pos+1:]
-   
+                            file_size = os.path.getsize(file_name)
+                            file_data = client_sock.recv(file_size)
+                         
                             if obj.is_text_file(file_name):
-                                file_size = os.path.getsize(file_name)
-                                file_data = client_sock.recv(file_size)
-                                obj.save_file(new_filename, file_data, user_login, client_sock)
                                 client_sock.send('True'.encode('utf-8'))
+                                obj.save_file(new_filename, file_data, user_login, client_sock)
                                 print(f'Файл {new_filename} был успешно принят')
                 
                             else:
@@ -254,12 +259,12 @@ while True:
 
                             pos = file_name.rfind('\\')
                             new_filename = file_name[pos+1:]
-                        
+                            file_size = os.path.getsize(file_name)
+                            file_data = client_sock.recv(file_size)
+                       
                             if not obj.is_text_file(file_name):
-                                file_size = os.path.getsize(file_name)
-                                file_data = client_sock.recv(file_size)
-                                obj.save_file(new_filename, file_data, user_login, client_sock)
                                 client_sock.send('True'.encode('utf-8'))
+                                obj.save_file(new_filename, file_data, user_login, client_sock)
                                 print(f'Файл {new_filename} был успешно принят')
                 
                             else:
