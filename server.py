@@ -142,7 +142,7 @@ while True:
                 login, password = data[0], data[1]
 
                 if login == '?' and password == '?':
-                    empty = client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
+                    client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
                     continue
 
                 if obj.Registration(login, password):
@@ -160,7 +160,7 @@ while True:
                     data = client_sock.recv(1024).decode().split("_")
                     login, password = data[0], data[1]
                     if login == '?' and password == '?':
-                        empty = client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
+                        client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
                         EmptyFlag = True
                         break
 
