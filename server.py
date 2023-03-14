@@ -26,10 +26,7 @@ class Server(Thread):
         if mimetype is not None:
             if mimetype.startswith('text/'):
                 return True
-            else:
-                return False
-        else:
-            return False
+        return False
 
     def save_file(self, new_filename, file_data, user_login, client_sock):
         status = self.user_data[user_login][1]
@@ -197,7 +194,7 @@ while True:
             continue
 
 
-        version = 2
+        version = randint(1, 2)
         client_sock.send(str(version).encode('utf-8'))
 
         if version == 1:
