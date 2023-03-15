@@ -189,6 +189,7 @@ while True:
                 if counter == 3:
                     print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
                     backflag = True
+                    break
 
         if backflag:
             continue
