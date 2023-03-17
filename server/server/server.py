@@ -6,7 +6,8 @@ import os
 import pickle
 import mimetypes
 
-class Server(Thread):
+
+class Server:
 
     def __init__(self, filename_auth):
         self.admin_logins = ['root', 'admin']
@@ -63,14 +64,11 @@ class Server(Thread):
             with open(user_path, 'ab') as f:
                 f.write(file_data)
 
-
-
-
     def Check_Registration(self, login):
         if login in self.user_data:
             return True
         return False
-       
+
     def Registration(self, login, password):
         status = 'user'
 
@@ -104,9 +102,140 @@ class Server(Thread):
 
         return False
 
-    def GO(self):
-        pass
+   
+def main(client_sock, addr, obj):
+    print(f'Есть входящий, IP-адрес: {addr[0]} -- Порт: {addr[1]}')
+    client_sock.send('Auth'.encode('utf-8'))
 
+    while True:
+        backflag = False
+        command = client_sock.recv(1024).decode()
+
+        if command == '/reg':
+            data = client_sock.recv(1024).decode().split('_')
+            login, password = data[0], data[1]
+
+            if login == '?' and password == '?':
+                client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
+                continue
+
+            if obj.Registration(login, password):
+                user_login = login
+                client_sock.send('Successful'.encode('utf-8'))
+                break
+            else:
+                client_sock.send('Failed'.encode('utf-8'))
+
+        elif command == '/auth':
+            counter = 0
+            SuccessFlag = False
+            EmptyFlag = False
+
+            for i in range(3):
+                data = client_sock.recv(1024).decode().split("_")
+                login, password = data[0], data[1]
+                if login == '?' and password == '?':
+                    client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
+                    EmptyFlag = True
+                    break
+
+                if obj.Authorization(login, password):
+                    user_login = login
+                    client_sock.send('Successful'.encode('utf-8'))
+                    SuccessFlag = True
+                    break
+
+                else:
+                    client_sock.send('Failed'.encode('utf-8'))
+                    counter += 1
+
+            if EmptyFlag:
+                continue
+
+            if SuccessFlag:
+                break
+
+            if counter == 3:
+                print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
+                backflag = True
+                break
+
+    if backflag:
+        return
+
+    version = randint(1, 2)
+    client_sock.send(str(version).encode('utf-8'))
+
+    if version == 1:
+        while True:
+            flag = client_sock.recv(1024)
+
+            if flag.startswith(b'/'):
+
+                if flag == b'/exit':
+                    print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
+                    break
+
+                elif flag == b'/start':
+                    ValidFileFlag = client_sock.recv(1024)
+
+                    if ValidFileFlag == b'Valid':
+                        try:
+                            file_name = client_sock.recv(1024).decode('utf-8')
+                        except UnicodeDecodeError:
+                            print(f'Ошибка декодирования (IP-адрес: {addr[0]} -- Порт: {addr[1]})')
+                            break
+
+                        pos = file_name.rfind('\\')
+                        new_filename = file_name[pos + 1:]
+                        file_size = os.path.getsize(file_name)
+                        file_data = client_sock.recv(file_size)
+
+                        if obj.is_text_file(file_name):
+                            client_sock.send('True'.encode('utf-8'))
+                            obj.save_file(new_filename, file_data, user_login, client_sock)
+                            print(f'Файл {new_filename} был успешно принят')
+
+                        else:
+                            msg = f'Похоже, вы пытаетесь передать на сервер бинарный файл, что не соотвествует версии программы-сервера (версия: {version}), попробуйте еще раз'
+                            client_sock.send(msg.encode('utf-8'))
+
+
+
+    elif version == 2:
+        while True:
+            flag = client_sock.recv(1024)
+
+            if flag.startswith(b'/'):
+
+                if flag == b'/exit':
+                    print(f'Клиент с IP-адресом: {addr[0]} -- Портом: {addr[1]} отключен')
+                    break
+
+                elif flag == b'/start':
+                    ValidFileFlag = client_sock.recv(1024)
+
+                    if ValidFileFlag == b'Valid':
+                        try:
+                            file_name = client_sock.recv(1024).decode('utf-8')
+                        except UnicodeDecodeError:
+                            print(f'Ошибка декодирования, IP-адрес: {addr[0]} -- Порт: {addr[1]}')
+                            break
+
+                        pos = file_name.rfind('\\')
+                        new_filename = file_name[pos + 1:]
+                        file_size = os.path.getsize(file_name)
+                        file_data = client_sock.recv(file_size)
+
+                        if not obj.is_text_file(file_name):
+                            client_sock.send('True'.encode('utf-8'))
+                            obj.save_file(new_filename, file_data, user_login, client_sock)
+                            print(f'Файл {new_filename} был успешно принят')
+
+                        else:
+                            msg = f'Похоже, вы пытаетесь передать на сервер текстовый файл, что не соотвествует версии программы-сервера (версия: {version}), попробуйте еще раз'
+                            client_sock.send(msg.encode('utf-8'))
+    client_sock.close()
 
 localhost = '127.0.0.1'
 port = 1111
@@ -121,158 +250,22 @@ except error:
     print('Ошибка привязки сокета')
 
 try:
-    server.listen(1)
+    server.listen(5)
 except error:
     print('Ошибка прослушивания')
 
 print('Ожидание соединения...')
 filename_auth = 'user_data.pickle'
-user_login = ''
 obj = Server(filename_auth)
-while True: 
-    
+
+while True:
     try:
         client_sock, addr = server.accept()
     except error:
         print('Ошибка принятия подключения')
     else:
-        print(f'Есть входящий, IP-адрес: {addr[0]} -- Порт: {addr[1]}')
-        client_sock.send('Auth'.encode('utf-8'))
+        client_thread = Thread(target=main, args=(client_sock, addr, obj))
+        client_thread.start()
 
-        while True:
-            backflag = False
-            command = client_sock.recv(1024).decode()
-
-            if command == '/reg':
-                data = client_sock.recv(1024).decode().split('_')
-                login, password = data[0], data[1]
-
-                if login == '?' and password == '?':
-                    client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
-                    continue
-
-                if obj.Registration(login, password):
-                    user_login = login
-                    client_sock.send('Successful'.encode('utf-8'))
-                    break
-                else:
-                    client_sock.send('Failed'.encode('utf-8'))
-
-            elif command == '/auth':
-                counter = 0
-                SuccessFlag = False
-                EmptyFlag = False
-                for i in range(3):
-                    data = client_sock.recv(1024).decode().split("_")
-                    login, password = data[0], data[1]
-                    if login == '?' and password == '?':
-                        client_sock.send('Вы ввели пустые данные, попробуйте еще раз'.encode('utf-8'))
-                        EmptyFlag = True
-                        break
-
-                    if obj.Authorization(login, password):
-                        user_login = login
-                        client_sock.send('Successful'.encode('utf-8'))
-                        SuccessFlag = True
-                        break
-
-                    else:
-                        client_sock.send('Failed'.encode('utf-8'))
-                        counter += 1
-
-                if EmptyFlag:
-                    continue
-
-                if SuccessFlag:
-                    break
-
-                if counter == 3:
-                    print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
-                    backflag = True
-                    break
-
-        if backflag:
-            continue
-
-
-        version = randint(1, 2)
-        client_sock.send(str(version).encode('utf-8'))
-
-        if version == 1:
-            while True:
-                flag = client_sock.recv(1024)
-
-                if flag.startswith(b'/'):
-                    
-
-                    if flag == b'/exit':
-                        print(f'Клиент (IP-адрес: {addr[0]} -- Порт: {addr[1]}) отключен')
-                        break
-
-                    elif flag == b'/start':
-                        ValidFileFlag = client_sock.recv(1024)
-
-                        if ValidFileFlag == b'Valid':
-                            try:
-                                file_name = client_sock.recv(1024).decode('utf-8')
-                            except UnicodeDecodeError:
-                                print(f'Ошибка декодирования (IP-адрес: {addr[0]} -- Порт: {addr[1]})')
-                                break
-
-                            pos = file_name.rfind('\\')
-                            new_filename = file_name[pos+1:]
-                            file_size = os.path.getsize(file_name)
-                            file_data = client_sock.recv(file_size)
-                         
-                            if obj.is_text_file(file_name):
-                                client_sock.send('True'.encode('utf-8'))
-                                obj.save_file(new_filename, file_data, user_login, client_sock)
-                                print(f'Файл {new_filename} был успешно принят')
-                
-                            else:
-                                msg = f'Похоже, вы пытаетесь передать на сервер бинарный файл, что не соотвествует версии программы-сервера (версия: {version}), попробуйте еще раз'
-                                client_sock.send(msg.encode('utf-8'))
-                    
-      
-        
-        elif version == 2:
-            while True:          
-                flag = client_sock.recv(1024)
-
-                if flag.startswith(b'/'):
-
-                    if flag == b'/exit': 
-                        print(f'Клиент с IP-адресом: {addr[0]} -- Портом: {addr[1]} отключен')
-                        break
-
-                    elif flag == b'/start':
-                        ValidFileFlag = client_sock.recv(1024)
-
-                        if ValidFileFlag == b'Valid':
-                            try:
-                                file_name = client_sock.recv(1024).decode('utf-8')
-                            except UnicodeDecodeError:
-                                print(f'Ошибка декодирования, IP-адрес: {addr[0]} -- Порт: {addr[1]}')
-                                break
-
-                            pos = file_name.rfind('\\')
-                            new_filename = file_name[pos+1:]
-                            file_size = os.path.getsize(file_name)
-                            file_data = client_sock.recv(file_size)
-                       
-                            if not obj.is_text_file(file_name):
-                                client_sock.send('True'.encode('utf-8'))
-                                obj.save_file(new_filename, file_data, user_login, client_sock)
-                                print(f'Файл {new_filename} был успешно принят')
-                
-                            else:
-                                msg = f'Похоже, вы пытаетесь передать на сервер текстовый файл, что не соотвествует версии программы-сервера (версия: {version}), попробуйте еще раз'
-                                client_sock.send(msg.encode('utf-8'))
-                   
-client_sock.close()
-server.close()
-                
             
-
-        
-
+server.close()   
