@@ -8,9 +8,13 @@ import mimetypes
 
 
 class Server:
-    def __init__(self, filename_auth, max_clients):
+    def __init__(self, max_clients):
+        if not os.path.exists('user_data.pickle'):
+            f = open('user_data.pickle', 'wb')
+            f.close()
+
         self.admin_logins = ['root', 'admin']
-        self.filename_auth = filename_auth
+        self.filename_auth = 'user_data.pickle'
         self.max_clients = max_clients
         self.counter_client_connections = 0
         file_size = os.path.getsize(self.filename_auth)
@@ -263,9 +267,8 @@ except error:
     print('Ошибка прослушивания')
 
 print('Ожидание соединения...')
-filename_auth = 'user_data.pickle'
 max_clients = 3
-obj = Server(filename_auth, max_clients)
+obj = Server(max_clients)
 
 while True:
     try:
@@ -277,4 +280,4 @@ while True:
         client_thread.start()
 
             
-server.close()
+server.close()       
