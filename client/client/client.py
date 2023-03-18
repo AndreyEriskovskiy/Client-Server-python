@@ -6,23 +6,15 @@ import sys
 class Client:
     def is_valid_filename(self, filename):
 
-        if not os.path.exists(filename):
+        if os.path.exists(filename) and filename.find('\\' * 2) == -1:
+            if os.path.isfile(filename):
+                return True
+            else:
+                print('Введенный вами путь не является файлом')
+                return False
+        else:
             print('Заданного вами пути к файлу не существует')
             return False
-
-        else:
-            fpath = os.path.abspath(filename)
-
-            if filename[filename.rfind('\\') + 1:] == '' or filename.rfind('.') == -1:
-                print('Не указано имя файла')
-                return False
-
-            elif fpath != filename:
-                print('Вы ввели неполный путь к файлу')
-                return False
-
-            else:
-                return True
 
 
 host = '127.0.0.1'
