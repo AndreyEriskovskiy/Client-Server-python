@@ -14,10 +14,7 @@ class Client:
 
     # Метод is_valid_filename() проверяет валидность введенного пользователем пути к файлу
     def is_valid_filename(self, filename):
-        '''
-
-        '''
-
+      
         if os.path.exists(filename) and filename.find('\\' * 2) == -1:
             if os.path.isfile(filename):
                 return True
