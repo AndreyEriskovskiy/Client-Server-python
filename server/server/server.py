@@ -63,13 +63,13 @@ class Server:
         return False
 
     '''
-    Метод save_file() сохраняет файлы, отправленные клиентом на сервер. Если пользователь с правами администратора, 
+    Метод save_file() сохраняет файлы, отправленные клиентом на сервер. Если пользователь имеет права администратора, 
     
     ему необходимо указать имя каталога, в который следует сохранить файл, иначе файл сохраняется в каталоге 
     
     с логином пользователя.
     '''
-    def save_file(self, new_filename, file_data, user_login, client_sock):
+    def save_file(self, file_name, file_data, user_login, client_sock):
         status = self.user_data[user_login][1]  # статус пользователя
         if status == 'admin':
             client_sock.send('Admin'.encode('utf-8'))  # пользователь - администратор
@@ -81,7 +81,7 @@ class Server:
 
                 if user_catalog in self.user_data:
                     client_sock.send('Exist'.encode('utf-8'))                        # отправка сообщения о существовании каталога
-                    user_path = os.path.join(f'users/{user_catalog}', new_filename)  # путь для сохранения файла
+                    user_path = os.path.join(f'users/{user_catalog}', file_name)  # путь для сохранения файла
 
                     f = open(user_path, 'wb')                                        # создание файла в полученной директории
                     f.close()
@@ -96,7 +96,7 @@ class Server:
         else:
             client_sock.send('NoAdmin'.encode('utf-8'))                              # пользователь - не администратор
             os.makedirs(f'users/{user_login}', exist_ok=True)
-            user_path = os.path.join(f'users/{user_login}', new_filename)
+            user_path = os.path.join(f'users/{user_login}', file_name)
 
             f = open(user_path, 'wb')
             f.close()
@@ -157,9 +157,9 @@ class Server:
 '''
 Функция main() выполняет основную работу сервера. В цикле while сервер принимает команды от клиента и выполняет соответствующие операции. 
 
-Если клиент выбирает команду /reg, он должен предоставить логин и пароль для регистрации. Если клиент выбирает команду /auth, он должен 
+Если клиент выбирает команду "/reg", он должен предоставить логин и пароль для регистрации. Если клиент выбирает команду "/auth", он должен 
 
-предоставить логин и пароль для авторизации. Если клиент выбирает команду /exit, он завершает соединение. Если клиент отправляет файл, 
+предоставить логин и пароль для авторизации. Если клиент выбирает команду "/exit", он завершает соединение. Если клиент отправляет файл, 
 
 сервер сохраняет его с помощью метода save_file().
 
@@ -292,25 +292,33 @@ def main(client_sock, addr, obj):
 
                         if ValidFileFlag == b'Valid':
                             try:
-                                file_name = client_sock.recv(1024).decode('utf-8')
+                                file_path = client_sock.recv(1024).decode('utf-8')
                             except UnicodeDecodeError:
                                 print(f'Ошибка декодирования, IP-адрес: {addr[0]} -- Порт: {addr[1]}')
                                 break
 
-                            pos = file_name.rfind('\\')
-                            new_filename = file_name[pos + 1:]
-                            file_size = os.path.getsize(file_name)
+                            pos = file_path.rfind('\\')
+                            file_name = file_path[pos + 1:]
+                            file_size = os.path.getsize(file_path)
                             file_data = client_sock.recv(file_size)
 
-                            if not obj.is_text_file(file_name):                 # файл является бинарным
+                            if not obj.is_text_file(file_path):                 # файл является бинарным
                                 client_sock.send('True'.encode('utf-8'))
-                                obj.save_file(new_filename, file_data, user_login, client_sock)
-                                print(f'Файл {new_filename} был успешно принят')
+                                obj.save_file(file_name, file_data, user_login, client_sock)
+                                print(f'Файл {file_name} был успешно принят')
 
                             else:
                                 msg = f'Похоже, вы пытаетесь передать на сервер текстовый файл, что не соотвествует версии программы-сервера (версия: {version}), попробуйте еще раз'
                                 client_sock.send(msg.encode('utf-8'))
         client_sock.close()
+
+'''
+В основной части программы создается серверный сокет, после чего происходит его привязка к заданным адресу и порту.
+
+Затем сервер прослушивает входящие соединения программ-клиентов, принимает подключения и для каждого подключенной 
+
+программы-клиента создается отдельный поток, в котором сервер взаимодействует с программой-клиентом. 
+'''
 
 localhost = '127.0.0.1'
 port = 1111
@@ -344,5 +352,3 @@ while True:
 
 
 server.close()
-
-
